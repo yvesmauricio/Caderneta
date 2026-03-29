@@ -1,9 +1,10 @@
-const cacheName = 'caderno-v1';
+const cacheName = 'caderno-v2';
 const resourcesToCache = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
+  './icon-512.png',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=DM+Mono:wght@500&display=swap'
 ];
 
