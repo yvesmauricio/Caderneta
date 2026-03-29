@@ -1,0 +1,3167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#3d1f08">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Caderno da Vendedora</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registrado!'))
+        .catch(err => console.log('Erro ao registrar SW:', err));
+    });
+  }
+</script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM — Chocolate warm palette
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg:           #faf7f2;
+  --surface:      #ffffff;
+  --border:       #ede8df;
+  --border2:      #ddd6c8;
+  --brown:        #3d2008;
+  --brown-mid:    #7a4a1e;
+  --brown-light:  #c49a6c;
+  --gold:         #c8890a;
+  --gold-bg:      #fef7e6;
+  --cream:        #fdf5e8;
+  --cream-deep:   #f3ede3;
+  --muted:        #6b5544;
+  --text:         #1e1208;
+  --green:        #1a7a45;
+  --green-bg:     #edfaf3;
+  --red:          #b91c1c;
+  --red-bg:       #fef2f2;
+  --orange:       #c45a09;
+  --orange-bg:    #fff7ed;
+  --blue:         #1d4ed8;
+  --blue-bg:      #eff6ff;
+  --r:            14px;
+  --r-sm:         9px;
+  --r-full:       999px;
+  --shadow:       0 1px 4px rgba(61,32,8,.07), 0 4px 16px rgba(61,32,8,.05);
+  --shadow-md:    0 4px 20px rgba(61,32,8,.12);
+  --font-ui:      'Plus Jakarta Sans', sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --t:            .18s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--font-ui);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ── APP SHELL ───────────────────────────────────────────── */
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── TELAS ───────────────────────────────────────────────── */
+.tela {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+  will-change: transform;
+}
+
+.tela.oculta {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tela.saindo {
+  transform: translateX(-30%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── TOPBAR ──────────────────────────────────────────────── */
+.topbar {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: max(10px, env(safe-area-inset-top)) 10px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+  min-height: 56px;
+}
+
+.topbar-title {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.topbar-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tags de Data no Cabeçalho */
+.header-date-tags {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+.tag-label-venda {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  background: var(--cream-deep);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tag-date-venda {
+  background: var(--gold-bg);
+  color: var(--gold);
+  border: 1px solid rgba(200,137,10,0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-back {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--surface);
+  color: var(--brown);
+  font-size: 17px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow);
+}
+.btn-back:active { opacity: .7; }
+
+/* ── BUSCA ───────────────────────────────────────────────── */
+.search-bar {
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 0 12px;
+  box-shadow: var(--shadow);
+}
+
+.search-wrap svg { color: var(--muted); flex-shrink: 0; }
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text);
+  padding: 11px 0;
+  outline: none;
+}
+.search-input::placeholder { color: var(--muted); }
+
+/* ── LISTAS ──────────────────────────────────────────────── */
+.scroll-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 10px 14px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-content: start;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-ui);
+  box-shadow: var(--shadow);
+  transition: border-color var(--t), background var(--t);
+  flex-shrink: 0;
+}
+.list-item:active { border-color: var(--brown-light); background: var(--cream); }
+
+.list-icon {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--gold-bg);
+  color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.list-icon.pessoa { background: var(--blue-bg); color: var(--blue); }
+
+.list-info { flex: 1; min-width: 0; }
+
+.list-nome {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.list-arrow { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+
+/* ── EMPTY ───────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 50px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.empty-ico { font-size: 36px; }
+
+/* ── TELA LANÇAR ─────────────────────────────────────────── */
+.lancar-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 14px 14px 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Card cliente */
+.cliente-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--brown);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.cliente-info { flex: 1; min-width: 0; }
+.cliente-nome { font-size: 16px; font-weight: 800; color: var(--text); }
+.cliente-loja { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+
+/* Datas */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 8px;
+}
+
+.date-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.date-field { display: flex; flex-direction: column; gap: 4px; }
+.date-label { font-size: 11px; font-weight: 700; color: var(--muted); }
+
+.date-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  box-shadow: var(--shadow);
+}
+.date-input:focus { border-color: var(--brown-light); }
+
+/* Chips de vencimento */
+.chip-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── SWIPE ACTIONS ────────────────────────────────────────── */
+.swipe-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  margin-bottom: 8px;
+  width: 100%;
+  flex-shrink: 0;
+}
+.swipe-container::-webkit-scrollbar { display: none; }
+
+.swipe-content {
+  min-width: 100%;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+  box-shadow: none !important;
+}
+
+.swipe-actions {
+  flex: 0 0 140px;
+  display: flex;
+  scroll-snap-align: end;
+}
+
+.action-btn {
+  flex: 1;
+  border: none;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+.action-btn:active { opacity: 0.8; }
+.action-btn.edit { background: var(--brown-mid); }
+.action-btn.del { background: var(--red); border-radius: 0 var(--r) var(--r) 0; }
+
+.swipe-container { position: relative; }
+.swipe-hint {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+  opacity: .45;
+  flex-shrink: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+.swipe-container.swiped .swipe-hint { opacity: 0; }
+
+.chip {
+  padding: 5px 12px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: all var(--t);
+}
+.chip.ativo, .chip:active {
+  background: var(--brown);
+  border-color: var(--brown);
+  color: #fff;
+}
+
+/* ── GRID DE PRODUTOS ────────────────────────────────────── */
+.produtos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.produto-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  box-shadow: var(--shadow);
+  transition: border-color var(--t), background var(--t);
+}
+
+.produto-card.ativo {
+  border-color: var(--brown-light);
+  background: var(--cream);
+}
+
+.prod-emoji { font-size: 34px; line-height: 1; }
+.prod-nome { font-size: 13px; font-weight: 700; color: var(--text); }
+.prod-preco { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+
+/* Stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+
+.stepper-btn {
+  width: 44px; height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--brown);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-ui);
+  flex-shrink: 0;
+  transition: background var(--t);
+}
+.stepper-btn:active { background: var(--border); }
+.stepper-btn:disabled { color: var(--muted); }
+
+.stepper-qty {
+  min-width: 34px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* ── FOOTER FIXO ─────────────────────────────────────────── */
+.footer-fixo {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 50;
+  box-shadow: 0 -4px 20px rgba(61,32,8,.08);
+}
+
+.footer-total { flex: 1; }
+.footer-total-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.footer-total-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--brown);
+  font-family: var(--font-mono);
+  line-height: 1.1;
+}
+
+.btn-salvar {
+  padding: 14px 24px;
+  border-radius: var(--r);
+  border: none;
+  background: var(--green);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 14px rgba(26,122,69,.35);
+  transition: opacity var(--t);
+  flex-shrink: 0;
+}
+.btn-salvar:active { opacity: .85; }
+.btn-salvar:disabled { opacity: .4; cursor: default; box-shadow: none; }
+
+/* ── TELA RESUMO ─────────────────────────────────────────── */
+.resumo-header {
+  padding: 14px 14px 10px;
+  flex-shrink: 0;
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+
+.kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.kpi-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--brown);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+.kpi-val.vermelho { color: var(--red); }
+
+/* Grupos de lojas */
+.resumo-lista {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 14px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.grupo-loja { display: flex; flex-direction: column; gap: 8px; }
+
+.loja-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: var(--surface);
+  border-radius: 10px;
+  border-left: 3px solid var(--brown);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.loja-ico { color: var(--brown); font-size: 13px; flex-shrink: 0; }
+.loja-nome { font-size: 13px; font-weight: 800; color: var(--text); flex: 1; }
+.loja-total { font-size: 13px; font-weight: 800; color: var(--brown); font-family: var(--font-mono); }
+
+.loja-header { cursor: pointer; user-select: none; }
+.loja-header:active { opacity: .8; }
+
+.loja-chevron {
+  color: var(--brown-light);
+  flex-shrink: 0;
+  transition: transform .22s cubic-bezier(.4,0,.2,1);
+  margin-left: 6px;
+}
+.loja-header.colapsado .loja-chevron { transform: rotate(-90deg); }
+
+.grupo-clientes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  transition: max-height .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+  max-height: 9999px;
+  opacity: 1;
+}
+.grupo-clientes.colapsado {
+  max-height: 0 !important;
+  opacity: 0;
+}
+
+.btn-excluir-compra {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  color: var(--red);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--t), border-color var(--t);
+}
+.btn-excluir-compra:active { background: var(--red-bg); border-color: var(--red); }
+
+/* Card cliente no resumo */
+.cli-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cli-card.atrasado { border-color: #fecaca; background: #fff9f9; }
+
+.cli-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  gap: 10px;
+}
+
+.cli-info { flex: 1; min-width: 0; }
+.cli-nome { font-size: 15px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cli-tel { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.cli-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.cli-total { font-size: 16px; font-weight: 800; color: var(--text); font-family: var(--font-mono); }
+.cli-total.atrasado { color: var(--red); }
+
+.btn-zap {
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  border: none;
+  background: #25D366;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.btn-zap:active { opacity: .8; }
+
+/* Compras individuais */
+.compras-lista { border-top: 1px solid var(--border); }
+
+.compra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  gap: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+.compra-row:last-child { border-bottom: none; }
+.compra-row.atrasada { background: #fff5f5; }
+
+.compra-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.compra-data { font-size: 12px; color: var(--text); font-weight: 700; }
+.compra-itens { font-size: 12px; color: var(--muted); }
+.compra-vence { font-size: 11px; color: var(--muted); }
+.compra-vence.atrasada { color: var(--red); font-weight: 700; }
+
+.compra-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.compra-valor {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text);
+  white-space: nowrap;
+}
+.compra-acoes {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-receber {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--green);
+  color: #fff;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-receber:active { opacity: .8; }
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+  box-shadow: 0 -2px 12px rgba(61,32,8,.08);
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--t);
+  min-width: 0;
+}
+
+.nav-btn svg, .nav-btn .nav-ico { font-size: 20px; }
+
+.nav-btn.ativo { color: var(--brown); }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: var(--brown);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--r-full);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 999;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+  opacity: 0;
+  max-width: 90vw;
+}
+
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+#toast.sucesso { background: var(--green); }
+#toast.erro { background: var(--red); }
+#toast.aviso { background: var(--orange); }
+
+/* ── DIALOG CONFIRMAR RECEBIMENTO ───────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,18,8,.55);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn .18s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.dialog-sheet {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+  animation: slideUp .22s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.dialog-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.dialog-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+.dialog-btns { display: flex; gap: 10px; }
+
+.btn-cancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-confirm {
+  flex: 2;
+  padding: 13px;
+  border-radius: var(--r);
+  border: none;
+  background: var(--green);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ── SCREEN BOAS-VINDAS (primeiro acesso) ───────────────── */
+.bv-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.bv-emoji { font-size: 64px; line-height: 1; }
+.bv-title { font-size: 22px; font-weight: 800; color: var(--brown); }
+.bv-sub { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--r);
+  border: none;
+  background: var(--brown);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn-primary:active { opacity: .85; }
+
+/* ── MODAL NOVA LOJA / NOVO CLIENTE ─────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,18,8,.55);
+  z-index: 300;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+
+.modal-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 0 0 24px 24px;
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: slideDown .25s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 8px 32px rgba(61,32,8,.18);
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-titulo { font-size: 16px; font-weight: 800; color: var(--text); }
+
+.btn-fechar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: 12px; font-weight: 700; color: var(--muted); }
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+}
+.form-input:focus { border-color: var(--brown-light); }
+
+.form-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  appearance: none;
+}
+
+/* ── CALCULADORA MAQUININHA ───────────────────────────────── */
+.calc-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 16px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.calc-input-wrap {
+  background: var(--surface);
+  border: 2px solid var(--border2);
+  border-radius: var(--r);
+  padding: 20px 18px 16px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.calc-input-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.calc-input-field {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--brown);
+  outline: none;
+  caret-color: var(--gold);
+}
+.calc-input-field::placeholder { color: var(--border2); }
+
+.calc-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 -18px;
+}
+
+.calc-hint {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.calc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calc-result-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.calc-result-card.debito  { border-left: 4px solid var(--blue); }
+.calc-result-card.credito { border-left: 4px solid var(--green); }
+
+.calc-result-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.calc-result-card.debito  .calc-result-icon { background: var(--blue-bg); }
+.calc-result-card.credito .calc-result-icon { background: var(--green-bg); }
+
+.calc-result-info { flex: 1; }
+.calc-result-tipo { font-size: 12px; font-weight: 700; color: var(--muted); }
+.calc-result-taxa { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+.calc-result-val {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: right;
+  flex-shrink: 0;
+}
+.calc-result-card.debito  .calc-result-val { color: var(--blue); }
+.calc-result-card.credito .calc-result-val { color: var(--green); }
+
+.calc-info-box {
+  background: var(--gold-bg);
+  border: 1px solid rgba(200,137,10,.25);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.calc-info-box p {
+  font-size: 12px;
+  color: var(--brown-mid);
+  line-height: 1.55;
+}
+
+.calc-clear-btn {
+  align-self: center;
+  padding: 10px 24px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.calc-clear-btn:active { background: var(--cream-deep); }
+
+/* ── SEÇÃO DE SEGURANÇA NO RESUMO ────────────────────────── */
+.backup-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: var(--surface);
+  border: 2px dashed var(--border2);
+  border-radius: var(--r);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn-seguranca {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brown);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* ── DASHBOARD ───────────────────────────────────────────── */
+.dash-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 14px 14px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dash-greeting {
+  background: linear-gradient(135deg, var(--brown) 0%, var(--brown-mid) 100%);
+  border-radius: var(--r);
+  padding: 22px 18px;
+  padding-right: 70px; /* espaço para o emoji decorativo */
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible;
+}
+.dash-greeting::after {
+  content: '🍫';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 42px;
+  opacity: .18;
+  pointer-events: none;
+  line-height: 1;
+}
+.dash-hello {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.dash-date-line {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: .75;
+  text-transform: capitalize;
+}
+
+.dash-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dash-kpi-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 13px 14px 11px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dash-kpi-card.destaque { border-color: rgba(200,137,10,.35); background: var(--gold-bg); }
+.dash-kpi-card.alerta   { border-color: rgba(185,28,28,.25); background: var(--red-bg); }
+
+.dash-kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.dash-kpi-val {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--brown);
+  font-family: var(--font-mono);
+  line-height: 1.2;
+}
+.dash-kpi-val.verde { color: var(--green); }
+.dash-kpi-val.vermelho { color: var(--red); }
+.dash-kpi-val.normal { color: var(--text); }
+
+.dash-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.dash-action-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--r);
+  border: none;
+  background: var(--brown);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(61,32,8,.25);
+  transition: opacity var(--t);
+}
+.dash-action-btn:active { opacity: .85; }
+
+.dash-venc-item {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 11px 13px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-shrink: 0;
+}
+.dash-venc-item.urgente { border-color: #fecaca; background: #fff9f9; }
+
+.dash-venc-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--gold-bg);
+  color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.dash-venc-item.urgente .dash-venc-dot { background: var(--red-bg); }
+
+.dash-venc-info { flex: 1; min-width: 0; }
+.dash-venc-nome { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-venc-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.dash-venc-valor { font-size: 14px; font-weight: 800; color: var(--text); font-family: var(--font-mono); flex-shrink: 0; }
+.dash-venc-item.urgente .dash-venc-valor { color: var(--red); }
+
+.dash-refresh-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+}
+.dash-refresh-btn:active { background: var(--cream-deep); }
+
+/* ── CONFIGURAÇÕES ───────────────────────────────────────── */
+.config-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 14px 14px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.config-section {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+}
+
+/* Accordion header */
+.config-section-title {
+  padding: 14px 15px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--brown);
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  gap: 8px;
+}
+.config-section-title:active { opacity: .8; }
+
+.config-acc-chevron {
+  color: var(--brown-light);
+  flex-shrink: 0;
+  transition: transform .22s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  align-items: center;
+}
+.config-section.aberto .config-acc-chevron { transform: rotate(180deg); }
+
+/* Accordion body */
+.config-acc-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+  opacity: 0;
+  border-top: 0px solid var(--border);
+}
+.config-section.aberto .config-acc-body {
+  max-height: 65vh;
+  overflow-y: auto;
+  opacity: 1;
+  border-top: 1px solid var(--border);
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--t);
+  min-height: 54px;
+}
+.config-row:last-of-type { border-bottom: none; }
+.config-row:active { background: var(--cream); }
+
+.config-row-icon {
+  font-size: 20px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.config-row-info { flex: 1; min-width: 0; }
+.config-row-label { font-size: 14px; font-weight: 700; color: var(--text); }
+.config-row-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.config-row-arrow { color: var(--muted); font-size: 18px; flex-shrink: 0; }
+
+/* Config backup button variants */
+.config-row.drive .config-row-icon { color: var(--blue); }
+.config-row.share .config-row-icon { color: #34a853; }
+.config-row.restore .config-row-icon { color: var(--orange); }
+.config-row.download .config-row-icon { color: var(--brown-mid); }
+.config-row.danger .config-row-label { color: var(--red); }
+.config-row.danger .config-row-icon { color: var(--red); }
+
+/* Produto edit row */
+.prod-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--border);
+}
+.prod-edit-row:last-child { border-bottom: none; }
+.prod-edit-emoji { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
+.prod-edit-fields { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.prod-edit-nome {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg);
+}
+.prod-edit-nome:focus { outline: none; border-color: var(--brown-light); }
+.prod-edit-preco-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  padding: 0 10px;
+}
+.prod-edit-preco-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.prod-edit-preco {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--brown);
+  padding: 7px 0;
+  outline: none;
+}
+
+/* Taxa edit */
+.taxa-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border);
+}
+.taxa-row:last-child { border-bottom: none; }
+.taxa-label { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+.taxa-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0 10px;
+}
+.taxa-input {
+  width: 54px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brown);
+  padding: 8px 0;
+  text-align: right;
+  outline: none;
+}
+.taxa-percent { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+.config-save-btn {
+  margin: 14px 15px 15px;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: var(--brown);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  width: calc(100% - 30px);
+  transition: opacity var(--t);
+}
+.config-save-btn:active { opacity: .85; }
+
+.config-sobre-wrap {
+  padding: 16px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+}
+.config-sobre-emoji { font-size: 32px; margin-bottom: 4px; }
+.config-sobre-title { font-size: 15px; font-weight: 800; color: var(--brown); }
+.config-sobre-ver { font-size: 12px; color: var(--muted); }
+.config-sobre-info { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+/* ── BOTTOM NAV 4 ITENS ──────────────────────────────────── */
+.nav-btn { min-width: 0; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── TELA: BOAS-VINDAS (sem lojas cadastradas) ── -->
+  <div class="tela oculta" id="tela-boasvindas">
+    <div class="bv-wrap">
+      <div class="bv-emoji">🍫</div>
+      <div class="bv-title">Caderno da Vendedora</div>
+      <div class="bv-sub">Anote as vendas fiado em segundos.<br>Sem complicação, sem papel perdido.</div>
+      <button class="btn-primary" onclick="abrirModalNovaLoja()">
+        ＋ Cadastrar primeira loja
+      </button>
+      <button class="btn-seguranca" style="width: 100%; margin-top: 10px; padding: 14px; border-radius: var(--r);" onclick="document.getElementById('inp-import-cfg').click()">
+        📥 Restaurar Backup anterior
+      </button>
+    </div>
+  </div>
+
+  <!-- ── TELA: DASHBOARD (home após setup) ── -->
+  <div class="tela oculta" id="tela-dashboard">
+    <div class="topbar">
+      <div></div>
+      <div class="topbar-title">📒 Caderno</div>
+      <button class="dash-refresh-btn" onclick="renderDashboard()" title="Atualizar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+    <div class="dash-body">
+      <!-- Saudação -->
+      <div class="dash-greeting">
+        <div class="dash-hello" id="dash-hello">Olá! 👋</div>
+        <div class="dash-date-line" id="dash-date-line">carregando...</div>
+      </div>
+      <!-- KPIs -->
+      <div class="dash-kpi-grid">
+        <div class="dash-kpi-card destaque">
+          <div class="dash-kpi-label">💰 Em Aberto</div>
+          <div class="dash-kpi-val verde" id="dash-kpi-total">R$ 0,00</div>
+        </div>
+        <div class="dash-kpi-card alerta">
+          <div class="dash-kpi-label">⚠️ Vencidos</div>
+          <div class="dash-kpi-val vermelho" id="dash-kpi-venc">R$ 0,00</div>
+        </div>
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">🏪 Lojas</div>
+          <div class="dash-kpi-val normal" id="dash-kpi-lojas">0</div>
+        </div>
+        <div class="dash-kpi-card">
+          <div class="dash-kpi-label">👩 Clientes</div>
+          <div class="dash-kpi-val normal" id="dash-kpi-clientes">0</div>
+        </div>
+      </div>
+      <!-- Ação rápida -->
+      <button class="dash-action-btn" onclick="navSwitch('lancar-hub')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nova Venda / Fiado
+      </button>
+      <!-- Próximos Vencimentos -->
+      <div class="dash-section-label">Próximos Vencimentos</div>
+      <div id="dash-venc-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+
+
+  <!-- ── TELA 1: LOJAS ── -->
+  <div class="tela oculta" id="tela-lojas">
+    <div class="topbar">
+      <div></div>
+      <div class="topbar-title">📒 Caderno</div>
+      <button class="btn-back" style="background:var(--gold);color:#fff;" onclick="abrirModalNovaLoja()" title="Nova loja">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+
+    <div class="search-bar">
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="search-input" placeholder="Buscar loja..." oninput="renderLojas(this.value)" id="busca-lojas">
+      </div>
+    </div>
+
+    <div class="scroll-list" id="lista-lojas"></div>
+  </div>
+
+  <!-- ── TELA 2: CLIENTES ── -->
+  <div class="tela oculta" id="tela-clientes">
+    <div class="topbar">
+      <button class="btn-back" onclick="irPara('lojas')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="topbar-title" id="titulo-clientes">Clientes<span class="topbar-sub" id="subtitulo-clientes"></span></div>
+      <button class="btn-back" style="background:var(--gold);color:#fff;" onclick="abrirModalNovoCliente()" title="Novo cliente">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+
+    <div class="search-bar">
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="search-input" placeholder="Buscar cliente..." oninput="renderClientes(this.value)" id="busca-clientes">
+      </div>
+    </div>
+
+    <div class="scroll-list" id="lista-clientes"></div>
+  </div>
+
+  <!-- ── TELA 3: LANÇAR ── -->
+  <div class="tela oculta" id="tela-lancar">
+    <div class="topbar">
+      <button class="btn-back" onclick="irPara('clientes')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="topbar-title">
+        Lançar Fiado
+        <div class="header-date-tags">
+          <span class="tag-label-venda">Quando foi a venda?</span>
+          <span class="tag-date-venda" id="tag-data-venda" onclick="document.getElementById('inp-data-venda').showPicker()">--/--</span>
+          <input type="date" id="inp-data-venda" style="position:absolute; opacity:0; pointer-events:none;" onchange="atualizarDataVenda(this.value)">
+        </div>
+      </div>
+      <div></div>
+    </div>
+
+    <div class="lancar-body">
+
+      <!-- Cliente selecionado -->
+      <div class="cliente-card">
+        <div class="avatar" id="lancar-avatar">?</div>
+        <div class="cliente-info">
+          <div class="cliente-nome" id="lancar-cliente">—</div>
+          <div class="cliente-loja">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span id="lancar-loja">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Produtos -->
+      <div>
+        <div class="section-label">O que ela levou?</div>
+        <div class="produtos-grid" id="grid-produtos">
+          <!-- Gerado por JS -->
+        </div>
+      </div>
+
+      <!-- Datas -->
+      <div>
+        <div class="date-label">💰 Quando vai pagar?</div>
+        <div class="chip-row">
+          <button class="chip" onclick="setVencChip('5dia',this)">5º Dia Útil</button>
+          <button class="chip" onclick="setVencChip('15',this)">Dia 15</button>
+          <button class="chip" onclick="setVencChip('fim',this)">Fim do Mês</button>
+        </div>
+        <div class="date-field">
+          <input type="date" class="date-input" id="inp-data-venc" onchange="estado.dataVenc=this.value">
+        </div>
+      </div>
+
+    </div><!-- /lancar-body -->
+
+    <!-- Rodapé total + salvar -->
+    <div class="footer-fixo">
+      <div class="footer-total">
+        <div class="footer-total-label">Total da Compra</div>
+        <div class="footer-total-val" id="total-val">R$ 0,00</div>
+      </div>
+      <button class="btn-salvar" id="btn-salvar" disabled onclick="salvar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Salvar
+      </button>
+    </div>
+  </div>
+
+  <!-- ── TELA 4: RESUMO ── -->
+  <div class="tela oculta" id="tela-resumo">
+    <div class="topbar">
+      <div></div>
+      <div class="topbar-title">📊 Resumo do Mês</div>
+      <div></div>
+    </div>
+
+    <div class="resumo-header">
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-label">Total em aberto</div>
+          <div class="kpi-val" id="kpi-total">R$ 0,00</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Vencidos</div>
+          <div class="kpi-val vermelho" id="kpi-vencidos">R$ 0,00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="resumo-lista">
+      <div id="resumo-lista-content"></div>
+    </div>
+  </div>
+
+  <!-- ── TELA 5: CALCULADORA ── -->
+  <div class="tela oculta" id="tela-calc">
+    <div class="topbar">
+      <div></div>
+      <div class="topbar-title">🧮 Maquininha</div>
+      <div></div>
+    </div>
+
+    <div class="calc-body">
+
+      <!-- Campo de entrada -->
+      <div class="calc-input-wrap">
+        <div class="calc-input-label">Valor que você quer receber</div>
+        <input
+          class="calc-input-field"
+          id="calc-input"
+          type="tel"
+          inputmode="numeric"
+          placeholder="R$ 0,00"
+          oninput="calcAtualizar(this)"
+        >
+        <div class="calc-divider"></div>
+        <div class="calc-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          A taxa é repassada ao cliente
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div class="calc-results">
+        <div class="calc-result-card debito">
+          <div class="calc-result-icon">💳</div>
+          <div class="calc-result-info">
+            <div class="calc-result-tipo">Débito na hora</div>
+            <div class="calc-result-taxa" id="lbl-taxa-deb">Taxa repassada: 2,98%</div>
+          </div>
+          <div class="calc-result-val" id="calc-debito">R$ 0,00</div>
+        </div>
+
+        <div class="calc-result-card credito">
+          <div class="calc-result-icon">💰</div>
+          <div class="calc-result-info">
+            <div class="calc-result-tipo">Crédito à vista na hora</div>
+            <div class="calc-result-taxa" id="lbl-taxa-cred">Taxa repassada: 6,17%</div>
+          </div>
+          <div class="calc-result-val" id="calc-credito">R$ 0,00</div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="calc-info-box">
+        <span style="font-size:18px;flex-shrink:0">🏦</span>
+        <p>PagBank configurado para recebimento <b>na hora</b>. O valor exibido é o que você deve cobrar na maquininha para receber o valor desejado líquido.</p>
+      </div>
+
+      <button class="calc-clear-btn" onclick="calcLimpar()">Limpar</button>
+
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+  <!-- ── TELA: CONFIGURAÇÕES ── -->
+  <div class="tela oculta" id="tela-config">
+    <div class="topbar">
+      <div></div>
+      <div class="topbar-title">⚙️ Configurações</div>
+      <div></div>
+    </div>
+    <div class="config-body">
+
+      <!-- BACKUP -->
+      <div class="config-section aberto" id="acc-backup">
+        <div class="config-section-title" onclick="toggleAcc('acc-backup')">
+          <span>💾 Cópia de Segurança</span>
+          <span class="config-acc-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+        <div class="config-acc-body">
+          <div class="config-row download" onclick="exportarBackup()">
+            <div class="config-row-icon">📥</div>
+            <div class="config-row-info">
+              <div class="config-row-label">Baixar Backup</div>
+              <div class="config-row-sub">Salva um arquivo .json na pasta Downloads</div>
+            </div>
+            <div class="config-row-arrow">›</div>
+          </div>
+          <div class="config-row share" onclick="compartilharBackup()">
+            <div class="config-row-icon">☁️</div>
+            <div class="config-row-info">
+              <div class="config-row-label">Enviar para Google Drive</div>
+              <div class="config-row-sub">Abre painel do Android para Drive, WhatsApp, e-mail...</div>
+            </div>
+            <div class="config-row-arrow">›</div>
+          </div>
+          <div class="config-row restore" onclick="document.getElementById('inp-import-cfg').click()">
+            <div class="config-row-icon">📤</div>
+            <div class="config-row-info">
+              <div class="config-row-label">Restaurar Backup</div>
+              <div class="config-row-sub">Importar dados de um arquivo .json salvo</div>
+            </div>
+            <div class="config-row-arrow">›</div>
+          </div>
+          <input type="file" id="inp-import-cfg" style="display:none" accept=".json" onchange="importarBackup(this)">
+        </div>
+      </div>
+
+      <!-- PRODUTOS -->
+      <div class="config-section" id="acc-produtos">
+        <div class="config-section-title" onclick="toggleAcc('acc-produtos')">
+          <span>🛍️ Produtos e Preços</span>
+          <span class="config-acc-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+        <div class="config-acc-body">
+          <div id="config-produtos-lista"></div>
+          <button class="config-save-btn" onclick="salvarProdutosConfig()">✓ Salvar Produtos</button>
+        </div>
+      </div>
+
+      <!-- CALCULADORA -->
+      <div class="config-section" id="acc-taxas">
+        <div class="config-section-title" onclick="toggleAcc('acc-taxas')">
+          <span>🏦 Taxas da Maquininha</span>
+          <span class="config-acc-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+        <div class="config-acc-body">
+          <div class="taxa-row">
+            <div class="taxa-label">💳 Débito na hora</div>
+            <div class="taxa-input-wrap">
+              <input type="number" class="taxa-input" id="conf-taxa-deb" step="0.01" min="0" max="30" inputmode="decimal">
+              <span class="taxa-percent">%</span>
+            </div>
+          </div>
+          <div class="taxa-row">
+            <div class="taxa-label">💰 Crédito à vista</div>
+            <div class="taxa-input-wrap">
+              <input type="number" class="taxa-input" id="conf-taxa-cred" step="0.01" min="0" max="30" inputmode="decimal">
+              <span class="taxa-percent">%</span>
+            </div>
+          </div>
+          <button class="config-save-btn" onclick="salvarTaxasConfig()">✓ Salvar Taxas</button>
+        </div>
+      </div>
+
+      <!-- SOBRE -->
+      <div class="config-section" id="acc-sobre">
+        <div class="config-section-title" onclick="toggleAcc('acc-sobre')">
+          <span>ℹ️ Sobre o App</span>
+          <span class="config-acc-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+        <div class="config-acc-body">
+          <div class="config-sobre-wrap">
+            <div class="config-sobre-emoji">🍫</div>
+            <div class="config-sobre-title">Caderno da Vendedora</div>
+            <div class="config-sobre-ver">Versão 2.0 · Funciona 100% offline</div>
+            <div class="config-sobre-info">Seus dados ficam guardados no próprio celular, com segurança e sem precisar de internet.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn" id="nav-inicio" onclick="navSwitch('dashboard')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Início
+  </button>
+  <button class="nav-btn ativo" id="nav-lancar" onclick="navSwitch('lancar-hub')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    Lançar
+  </button>
+  <button class="nav-btn" id="nav-resumo" onclick="navSwitch('resumo')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Resumo
+  </button>
+  <button class="nav-btn" id="nav-calc" onclick="navSwitch('calc')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
+    Máquina
+  </button>
+  <button class="nav-btn" id="nav-config" onclick="navSwitch('config')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Config
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAIS (injetados por JS) -->
+<div id="modais"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   INDEXEDDB — banco local
+═══════════════════════════════════════════════════════════ */
+const DB_NAME    = 'caderno-vendedora';
+const DB_VERSION = 1;
+let db;
+
+function abrirDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('lojas')) {
+        const s = d.createObjectStore('lojas', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('nome', 'nome', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('clientes')) {
+        const s = d.createObjectStore('clientes', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('lojaId', 'lojaId', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('fiados')) {
+        const s = d.createObjectStore('fiados', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('clienteId', 'clienteId', { unique: false });
+        s.createIndex('lojaId',    'lojaId',    { unique: false });
+        s.createIndex('status',    'status',    { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function tx(store, mode = 'readonly') {
+  return db.transaction(store, mode).objectStore(store);
+}
+
+function getAll(store, indexName, keyRange) {
+  return new Promise((resolve, reject) => {
+    const s = tx(store);
+    const req = indexName
+      ? s.index(indexName).getAll(keyRange)
+      : s.getAll();
+    req.onsuccess = e => resolve(e.target.result || []);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function put(store, obj) {
+  const res = await new Promise((resolve, reject) => {
+    const req = tx(store, 'readwrite').put(obj);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+  backupSilencioso();
+  return res;
+}
+
+async function del(store, id) {
+  await new Promise((resolve, reject) => {
+    const req = tx(store, 'readwrite').delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+  backupSilencioso();
+}
+
+async function update(store, id, changes) {
+  await new Promise((resolve, reject) => {
+    const s = tx(store, 'readwrite');
+    const getReq = s.get(id);
+    getReq.onsuccess = e => {
+      const obj = { ...e.target.result, ...changes };
+      const putReq = s.put(obj);
+      putReq.onsuccess = () => resolve();
+      putReq.onerror   = er => reject(er.target.error);
+    };
+    getReq.onerror = e => reject(e.target.error);
+  });
+  backupSilencioso();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRODUTOS CONFIGURÁVEIS
+═══════════════════════════════════════════════════════════ */
+const PRODUTOS_DEFAULT = [
+  { id: 'trufa',    nome: 'Trufa',      emoji: '🍫', preco: 6  },
+  { id: 'cone',     nome: 'Cone',       emoji: '🍦', preco: 8  },
+  { id: 'bolo',     nome: 'Bolo/Torta', emoji: '🎂', preco: 15 },
+  { id: 'barrinha', nome: 'Barrinha',   emoji: '🍫', preco: 7  },
+];
+
+function carregarProdutos() {
+  try {
+    const s = localStorage.getItem('caderno_produtos');
+    if (s) { const p = JSON.parse(s); if (p && p.length) return p; }
+  } catch(e) {}
+  return PRODUTOS_DEFAULT.map(p => ({...p}));
+}
+function salvarProdutosStorage(lista) {
+  localStorage.setItem('caderno_produtos', JSON.stringify(lista));
+}
+
+let PRODUTOS = carregarProdutos();
+
+/* TAXAS configuráveis */
+function carregarTaxas() {
+  try {
+    const s = localStorage.getItem('caderno_taxas');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return { debito: 2.98, credito_avista: 6.17 };
+}
+function salvarTaxasStorage(t) { localStorage.setItem('caderno_taxas', JSON.stringify(t)); }
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   ESTADO
+═══════════════════════════════════════════════════════════ */
+const estado = {
+  telaAtual:  '',
+  loja:       null,
+  cliente:    null,
+  qtds:       {},
+  dataVenda:  '',
+  dataVenc:   '',
+};
+
+function resetQtds() { PRODUTOS.forEach(p => estado.qtds[p.id] = 0); }
+
+/* ═══════════════════════════════════════════════════════════
+   FORMATAÇÃO
+═══════════════════════════════════════════════════════════ */
+const fmt  = v  => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc  = s  => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const hoje = () => new Date().toLocaleDateString('sv');
+const fmtBR = raw => {
+  if (!raw) return '--/--';
+  const b = String(raw).split('T')[0];
+  return /^\d{4}-\d{2}-\d{2}$/.test(b) ? b.split('-').reverse().join('/') : '--/--';
+};
+const initials = nome => {
+  if (!nome) return '?';
+  const p = nome.trim().split(' ').filter(Boolean);
+  return p.length >= 2 ? (p[0][0]+p[p.length-1][0]).toUpperCase() : nome.slice(0,2).toUpperCase();
+};
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+let _toastTimer;
+function toast(msg, tipo = 'sucesso') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + tipo;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAVEGAÇÃO COM SLIDE
+═══════════════════════════════════════════════════════════ */
+const TELAS = ['tela-boasvindas','tela-dashboard','tela-lojas','tela-clientes','tela-lancar','tela-resumo','tela-calc','tela-config'];
+const ORDEM = { 'tela-lojas': 0, 'tela-clientes': 1, 'tela-lancar': 2 };
+
+function irPara(nome) {
+  const id = 'tela-' + nome;
+  const cur = document.querySelector('.tela:not(.oculta)');
+
+  // Oculta o menu de navegação global em telas de ação focada
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) nav.style.display = (nome === 'lancar' || nome === 'boasvindas') ? 'none' : 'flex';
+
+  // Sincroniza botão ativo do nav
+  const navMap = { dashboard: 'nav-inicio', lojas: 'nav-lancar', clientes: 'nav-lancar', resumo: 'nav-resumo', calc: 'nav-calc', config: 'nav-config' };
+  if (navMap[nome]) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('ativo'));
+    document.getElementById(navMap[nome])?.classList.add('ativo');
+  }
+
+  if (cur && cur.id === id) return;
+
+  const irParaDir = cur && (ORDEM[id] ?? 99) > (ORDEM[cur.id] ?? 0);
+
+  TELAS.forEach(t => {
+    const el = document.getElementById(t);
+    el.classList.remove('saindo');
+    el.classList.add('oculta');
+  });
+
+  if (cur && irParaDir) {
+    cur.classList.remove('oculta');
+    cur.classList.add('saindo');
+    setTimeout(() => cur.classList.add('oculta'), 220);
+  }
+
+  const dest = document.getElementById(id);
+  dest.classList.remove('oculta','saindo');
+  estado.telaAtual = nome;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOTTOM NAV
+═══════════════════════════════════════════════════════════ */
+function navSwitch(aba) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('ativo'));
+  if (aba === 'dashboard') {
+    document.getElementById('nav-inicio').classList.add('ativo');
+    renderDashboard().then(() => irPara('dashboard'));
+  } else if (aba === 'resumo') {
+    document.getElementById('nav-resumo').classList.add('ativo');
+    renderResumo().then(() => irPara('resumo'));
+  } else if (aba === 'calc') {
+    document.getElementById('nav-calc').classList.add('ativo');
+    irPara('calc');
+  } else if (aba === 'config') {
+    document.getElementById('nav-config').classList.add('ativo');
+    abrirConfig();
+  } else {
+    document.getElementById('nav-lancar').classList.add('ativo');
+    renderLojas('');
+    irPara('lojas');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TELA 1 — LOJAS
+═══════════════════════════════════════════════════════════ */
+async function renderLojas(busca = '') {
+  const todas = await getAll('lojas');
+  const lista = document.getElementById('lista-lojas');
+  const filtradas = todas
+    .filter(l => !busca || l.nome.toLowerCase().includes(busca.toLowerCase()))
+    .sort((a,b) => a.nome.localeCompare(b.nome));
+
+  if (!filtradas.length) {
+    lista.innerHTML = `<div class="empty">
+      <div class="empty-ico">🏪</div>
+      <p>${busca ? 'Nenhuma loja encontrada' : 'Nenhuma loja cadastrada ainda.<br>Toque em <b>+</b> para adicionar.'}</p>
+    </div>`;
+    return;
+  }
+
+  lista.innerHTML = filtradas.map(l => `
+    <div class="swipe-container" id="sc-loja-${l.id}">
+      <div class="swipe-content" onclick="cliqueSwipe('sc-loja-${l.id}', () => escolherLoja(${l.id}))">
+        <div class="list-icon">🏪</div>
+        <div class="list-info">
+          <div class="list-nome">${esc(l.nome)}</div>
+          ${l.referencia ? `<div class="list-sub">${esc(l.referencia)}</div>` : ''}
+        </div>
+        <div class="swipe-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="swipe-actions">
+        <button class="action-btn edit" onclick="abrirModalEditarLoja(${l.id})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Editar</span>
+        </button>
+        <button class="action-btn del" onclick="confirmarExclusaoLoja(${l.id})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <span>Excluir</span>
+        </button>
+      </div>
+    </div>`).join('');
+  setupSwipes();
+}
+
+async function escolherLoja(lojaId) {
+  const todas = await getAll('lojas');
+  estado.loja = todas.find(l => l.id === lojaId);
+  if (!estado.loja) return;
+  document.getElementById('titulo-clientes').childNodes[0].textContent = estado.loja.nome;
+  document.getElementById('subtitulo-clientes').textContent = estado.loja.referencia || '';
+  document.getElementById('busca-clientes').value = '';
+  await renderClientes('');
+  irPara('clientes');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TELA 2 — CLIENTES
+═══════════════════════════════════════════════════════════ */
+async function renderClientes(busca = '') {
+  if (!estado.loja) return;
+  const todos = await getAll('clientes', 'lojaId', IDBKeyRange.only(estado.loja.id));
+  const lista = document.getElementById('lista-clientes');
+  const filtrados = todos
+    .filter(c => !busca || c.nome.toLowerCase().includes(busca.toLowerCase()))
+    .sort((a,b) => a.nome.localeCompare(b.nome));
+
+  if (!filtrados.length) {
+    lista.innerHTML = `<div class="empty">
+      <div class="empty-ico">👤</div>
+      <p>${busca ? 'Nenhum cliente encontrado' : 'Nenhuma cliente nesta loja.<br>Toque em <b>+</b> para adicionar.'}</p>
+    </div>`;
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(c => `
+    <div class="swipe-container" id="sc-cli-${c.id}">
+      <div class="swipe-content" onclick="cliqueSwipe('sc-cli-${c.id}', () => escolherCliente(${c.id}))">
+        <div class="list-icon pessoa">👩</div>
+        <div class="list-info">
+          <div class="list-nome">${esc(c.nome)}</div>
+          <div class="list-sub">${c.telefone ? esc(c.telefone) : 'Sem telefone'}</div>
+        </div>
+        <div class="swipe-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="swipe-actions">
+        <button class="action-btn edit" onclick="abrirModalNovoCliente(${c.id})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Editar</span>
+        </button>
+        <button class="action-btn del" onclick="confirmarExclusaoCliente(${c.id})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <span>Excluir</span>
+        </button>
+      </div>
+    </div>`).join('');
+  setupSwipes();
+}
+
+async function escolherCliente(clienteId) {
+  const todos = await getAll('clientes');
+  estado.cliente = todos.find(c => c.id === clienteId);
+  if (!estado.cliente) return;
+  resetQtds();
+  estado.dataVenda = hoje();
+  estado.dataVenc  = defaultVenc();
+  renderLancar();
+  irPara('lancar');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TELA 3 — LANÇAR
+═══════════════════════════════════════════════════════════ */
+function defaultVenc() {
+  const d = new Date();
+  const prox = new Date(d.getFullYear(), d.getMonth() + 1, 5);
+  return prox.toLocaleDateString('sv');
+}
+
+function renderLancar() {
+  // Cabeçalho
+  document.getElementById('lancar-avatar').textContent   = initials(estado.cliente?.nome || '');
+  document.getElementById('lancar-cliente').textContent  = estado.cliente?.nome || '—';
+  document.getElementById('lancar-loja').textContent     = estado.loja?.nome || '—';
+
+  // Datas
+  const inpVenda = document.getElementById('inp-data-venda');
+  inpVenda.value = estado.dataVenda;
+  document.getElementById('tag-data-venda').textContent = fmtBR(estado.dataVenda);
+  document.getElementById('inp-data-venc').value  = estado.dataVenc;
+
+  // Grid de produtos
+  const grid = document.getElementById('grid-produtos');
+  grid.innerHTML = PRODUTOS.map(p => `
+    <div class="produto-card" id="card-${p.id}">
+      <div class="prod-emoji">${p.emoji}</div>
+      <div class="prod-nome">${p.nome}</div>
+      <div class="prod-preco">R$ ${fmt(p.preco)} / un</div>
+      <div class="stepper">
+        <button class="stepper-btn" id="min-${p.id}" disabled onclick="decrementar('${p.id}')">−</button>
+        <span class="stepper-qty" id="qtd-${p.id}">0</span>
+        <button class="stepper-btn" onclick="incrementar('${p.id}')">+</button>
+      </div>
+    </div>`).join('');
+
+  atualizarTotal();
+}
+
+function atualizarDataVenda(val) {
+  estado.dataVenda = val;
+  document.getElementById('tag-data-venda').textContent = fmtBR(val);
+}
+
+function incrementar(id) {
+  estado.qtds[id] = (estado.qtds[id] || 0) + 1;
+  document.getElementById('qtd-' + id).textContent = estado.qtds[id];
+  document.getElementById('min-' + id).disabled = false;
+  document.getElementById('card-' + id).classList.add('ativo');
+  atualizarTotal();
+}
+
+function decrementar(id) {
+  if ((estado.qtds[id]||0) <= 0) return;
+  estado.qtds[id]--;
+  document.getElementById('qtd-' + id).textContent = estado.qtds[id];
+  document.getElementById('min-' + id).disabled = estado.qtds[id] === 0;
+  if (estado.qtds[id] === 0) document.getElementById('card-' + id).classList.remove('ativo');
+  atualizarTotal();
+}
+
+function atualizarTotal() {
+  const total = PRODUTOS.reduce((s,p) => s + (estado.qtds[p.id]||0)*p.preco, 0);
+  document.getElementById('total-val').textContent = 'R$ ' + fmt(total);
+  const btn = document.getElementById('btn-salvar');
+  const temItem = PRODUTOS.some(p => (estado.qtds[p.id]||0) > 0);
+  btn.disabled = !temItem;
+}
+
+function setVencChip(tipo, btn) {
+  const d = new Date();
+  let data;
+  if (tipo === '5dia') data = new Date(d.getFullYear(), d.getMonth() + 1, 5);
+  else if (tipo === '15') data = new Date(d.getFullYear(), d.getMonth() + 1, 15);
+  else data = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const iso = data.toLocaleDateString('sv');
+  estado.dataVenc = iso;
+  document.getElementById('inp-data-venc').value = iso;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('ativo'));
+  btn.classList.add('ativo');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SALVAR
+═══════════════════════════════════════════════════════════ */
+let _salvandoLock = false;
+async function salvar() {
+  if (_salvandoLock) return;
+  _salvandoLock = true;
+  try {
+    const itens = PRODUTOS
+      .filter(p => (estado.qtds[p.id]||0) > 0)
+      .map(p => ({ produtoId: p.id, nome: p.nome, qtd: estado.qtds[p.id], preco: p.preco }));
+
+    const total = itens.reduce((s,i) => s + i.qtd * i.preco, 0);
+
+    if (total <= 0) { toast('Adicione pelo menos um produto.', 'aviso'); return; }
+
+    const fiado = {
+      clienteId:  estado.cliente.id,
+      lojaId:     estado.loja.id,
+      lojaId:     estado.loja.id,
+      clienteNome: estado.cliente.nome,
+      lojaNome:   estado.loja.nome,
+      clienteTel: estado.cliente.telefone || '',
+      dataVenda:  estado.dataVenda || hoje(),
+      dataVenc:   estado.dataVenc  || defaultVenc(),
+      itens,
+      total,
+      pago:       0,
+      saldo:      total,
+      status:     'PENDENTE',
+      criadoEm:   new Date().toISOString(),
+    };
+
+    await put('fiados', fiado);
+    toast('✅ Lançamento salvo!', 'sucesso');
+    resetQtds();
+    irPara('clientes');
+  } finally {
+    _salvandoLock = false;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TELA 4 — RESUMO
+═══════════════════════════════════════════════════════════ */
+async function renderResumo() {
+  const hj = hoje();
+  const todos = await getAll('fiados');
+  const abertos = todos.filter(f => f.saldo > 0.01);
+
+  // KPIs
+  const totalAberto = abertos.reduce((s,f) => s + f.saldo, 0);
+  const totalVencido = abertos
+    .filter(f => f.dataVenc && f.dataVenc < hj)
+    .reduce((s,f) => s + f.saldo, 0);
+
+  document.getElementById('kpi-total').textContent    = 'R$ ' + fmt(totalAberto);
+  document.getElementById('kpi-vencidos').textContent = 'R$ ' + fmt(totalVencido);
+
+  const lista = document.getElementById('resumo-lista-content');
+
+  if (!abertos.length) {
+    lista.innerHTML = `<div class="empty">
+      <div class="empty-ico">🎉</div>
+      <p>Nenhum fiado em aberto!<br>Tudo em dia por aqui.</p>
+    </div>`;
+    return;
+  }
+
+  // Agrupa por loja → cliente
+  const porLoja = new Map();
+  abertos.forEach(f => {
+    if (!porLoja.has(f.lojaNome)) porLoja.set(f.lojaNome, new Map());
+    const porCli = porLoja.get(f.lojaNome);
+    if (!porCli.has(f.clienteId)) {
+      porCli.set(f.clienteId, { nome: f.clienteNome, tel: f.clienteTel, compras: [] });
+    }
+    porCli.get(f.clienteId).compras.push(f);
+  });
+
+  let html = '';
+  porLoja.forEach((clientes, lojaNome) => {
+    const lojaKey = 'loja-' + lojaNome.replace(/\W/g,'_');
+    let totalLoja = 0;
+    clientes.forEach(c => { totalLoja += c.compras.reduce((s,f) => s+f.saldo, 0); });
+
+    html += `<div class="grupo-loja">
+      <div class="loja-header colapsado" id="hdr-${lojaKey}" onclick="toggleLoja('${lojaKey}')">
+        <span class="loja-ico">🏪</span>
+        <span class="loja-nome">${esc(lojaNome)}</span>
+        <span class="loja-total">R$ ${fmt(totalLoja)}</span>
+        <svg class="loja-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="grupo-clientes colapsado" id="grp-${lojaKey}" style="max-height:0;opacity:0">`;
+
+    clientes.forEach((cli, clienteId) => {
+      const totalCli = cli.compras.reduce((s,f) => s+f.saldo, 0);
+      const algumAtrasado = cli.compras.some(f => f.dataVenc && f.dataVenc < hj);
+
+      html += `<div class="cli-card ${algumAtrasado ? 'atrasado' : ''}">
+        <div class="cli-header">
+          <div class="cli-info">
+            <div class="cli-nome">${esc(cli.nome)}</div>
+            ${cli.tel ? `<div class="cli-tel">📱 ${esc(cli.tel)}</div>` : ''}
+          </div>
+          <div class="cli-right">
+            <div class="cli-total ${algumAtrasado ? 'atrasado' : ''}">R$ ${fmt(totalCli)}</div>
+            ${cli.tel ? `<button class="btn-zap" onclick="enviarZap(${clienteId})">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 0C5.372 0 0 5.372 0 12c0 2.117.554 4.1 1.521 5.82L.06 23.941 6.41 22.5A11.938 11.938 0 0012 24c6.628 0 12-5.372 12-12S18.627 0 12 0zm.001 21.818a9.808 9.808 0 01-5.001-1.369l-.359-.213-3.722.976.993-3.628-.234-.373A9.793 9.793 0 012.18 12C2.18 6.59 6.59 2.18 12 2.18c5.41 0 9.82 4.41 9.82 9.82 0 5.41-4.41 9.818-9.82 9.818z"/></svg>
+              WhatsApp
+            </button>` : ''}
+          </div>
+        </div>
+        <div class="compras-lista">`;
+
+      cli.compras.forEach(f => {
+        const atrasada = f.dataVenc && f.dataVenc < hj;
+        const resumo = f.itens.map(i => `${i.qtd}× ${i.nome}`).join(' · ');
+        html += `<div class="compra-row ${atrasada ? 'atrasada' : ''}">
+          <div class="compra-info">
+            <div class="compra-data">📅 ${fmtBR(f.dataVenda)}</div>
+            <div class="compra-itens">${esc(resumo)}</div>
+            <div class="compra-vence ${atrasada ? 'atrasada' : ''}">
+              ${atrasada ? '⚠️ Venceu em ' : 'Vence em '}${fmtBR(f.dataVenc)}
+            </div>
+          </div>
+          <div class="compra-right">
+            <div class="compra-valor">R$ ${fmt(f.saldo)}</div>
+            <div class="compra-acoes">
+              <button class="btn-receber" onclick="confirmarRecebimento(${f.id})" title="Marcar como recebido">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button class="btn-excluir-compra" onclick="confirmarExclusaoCobranca(${f.id})" title="Excluir cobrança">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      });
+
+      html += `</div></div>`; // fecha compras-lista e cli-card
+    });
+
+    html += `</div></div>`; // fecha grupo-clientes e grupo-loja
+  });
+
+  lista.innerHTML = html;
+
+  // Referência para o WhatsApp (precisamos do Map ainda)
+  window._resumoCliMap = {};
+  porLoja.forEach((clientes) => {
+    clientes.forEach((cli, clienteId) => {
+      window._resumoCliMap[clienteId] = cli;
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COLAPSAR LOJA NO RESUMO
+═══════════════════════════════════════════════════════════ */
+function toggleLoja(key) {
+  const hdr = document.getElementById('hdr-' + key);
+  const grp = document.getElementById('grp-' + key);
+  if (!hdr || !grp) return;
+  const colapsando = !hdr.classList.contains('colapsado');
+  if (colapsando) {
+    grp.style.maxHeight = grp.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      grp.classList.add('colapsado');
+      grp.style.maxHeight = '0';
+      grp.style.opacity = '0';
+    });
+  } else {
+    grp.classList.remove('colapsado');
+    grp.style.maxHeight = '9999px';
+    grp.style.opacity = '1';
+  }
+  hdr.classList.toggle('colapsado', colapsando);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXCLUIR COBRANÇA
+═══════════════════════════════════════════════════════════ */
+async function confirmarExclusaoCobranca(fiadoId) {
+  const todos = await getAll('fiados');
+  const fiado = todos.find(f => f.id === fiadoId);
+  if (!fiado) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="dialog-sheet">
+      <div class="dialog-title">Excluir cobrança?</div>
+      <div class="dialog-sub">
+        <b>${esc(fiado.clienteNome)}</b> — R$ ${fmt(fiado.saldo)}<br>
+        Entrega ${fmtBR(fiado.dataVenda)} · vence ${fmtBR(fiado.dataVenc)}<br><br>
+        Esta ação não pode ser desfeita.
+      </div>
+      <div class="dialog-btns">
+        <button class="btn-cancel" id="dlg-cancel-exc">Cancelar</button>
+        <button class="btn-confirm" style="background:var(--red)" id="dlg-ok-exc">🗑 Excluir</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.querySelector('#dlg-cancel-exc').onclick = () => overlay.remove();
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.querySelector('#dlg-ok-exc').onclick = async () => {
+    await del('fiados', fiadoId);
+    overlay.remove();
+    toast('Cobrança excluída.', 'sucesso');
+    await renderResumo();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RECEBER — dialog de confirmação
+═══════════════════════════════════════════════════════════ */
+async function confirmarRecebimento(fiadoId) {
+  const todos = await getAll('fiados');
+  const fiado = todos.find(f => f.id === fiadoId);
+  if (!fiado) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="dialog-sheet">
+      <div class="dialog-title">Confirmar recebimento?</div>
+      <div class="dialog-sub">
+        ${esc(fiado.clienteNome)} — R$ ${fmt(fiado.saldo)}<br>
+        Venda do dia ${fmtBR(fiado.dataVenda)} · vence ${fmtBR(fiado.dataVenc)}
+      </div>
+      <div class="dialog-btns">
+        <button class="btn-cancel" id="dlg-cancel">Cancelar</button>
+        <button class="btn-confirm" id="dlg-ok">✓ Recebi</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.querySelector('#dlg-cancel').onclick = () => overlay.remove();
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.querySelector('#dlg-ok').onclick = async () => {
+    await update('fiados', fiadoId, { saldo: 0, pago: fiado.total, status: 'PAGO', paguEm: hoje() });
+    overlay.remove();
+    toast('✅ Recebimento registrado!', 'sucesso');
+    await renderResumo();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WHATSAPP
+═══════════════════════════════════════════════════════════ */
+async function enviarZap(clienteId) {
+  const todos = await getAll('fiados');
+  const hj = hoje();
+  const fiados = todos.filter(f => f.clienteId === clienteId && f.saldo > 0.01);
+  if (!fiados.length) return;
+
+  const cli    = fiados[0];
+  const nome   = cli.clienteNome;
+  const tel    = cli.clienteTel;
+
+  // Monta mensagem consolidada
+  let linhas = '';
+  fiados.forEach(f => {
+    const resumo = f.itens.map(i => `    • ${i.qtd}x ${i.nome} — R$ ${fmt(i.qtd * i.preco)}`).join('\n');
+    linhas += `\n📅 *Entrega ${fmtBR(f.dataVenda)}* (vence ${fmtBR(f.dataVenc)})\n${resumo}\n  *Subtotal: R$ ${fmt(f.saldo)}*\n`;
+  });
+
+  const totalGeral = fiados.reduce((s,f) => s + f.saldo, 0);
+  const msg =
+    `Olá, *${nome}*! 👋\n\n` +
+    `Passando para organizar o financeiro das suas compras:\n` +
+    `${linhas}\n` +
+    `*💰 Total em aberto: R$ ${fmt(totalGeral)}*\n\n` +
+    `Qualquer dúvida é só falar. Obrigada! 🍫`;
+
+  let numLimpo = tel.replace(/\D/g, '');
+  if (numLimpo.length < 10) {
+    const input = prompt(`Telefone não encontrado para ${nome}.\nDigite o WhatsApp com DDD:`);
+    if (!input) return;
+    numLimpo = input.replace(/\D/g, '');
+  }
+  if (numLimpo.length < 10) { toast('Número inválido.', 'erro'); return; }
+
+  const ddi = numLimpo.startsWith('55') ? '' : '55';
+  window.open(`https://wa.me/${ddi}${numLimpo}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SWIPE HELPERS
+═══════════════════════════════════════════════════════════ */
+function setupSwipes() {
+  document.querySelectorAll('.swipe-container').forEach(sc => {
+    sc.addEventListener('scroll', () => {
+      const swiped = sc.scrollLeft > 20;
+      sc.classList.toggle('swiped', swiped);
+    }, { passive: true });
+  });
+}
+
+function cliqueSwipe(id, fn) {
+  const sc = document.getElementById(id);
+  if (sc && sc.scrollLeft > 20) {
+    sc.scrollTo({ left: 0, behavior: 'smooth' });
+  } else {
+    fn();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MÁSCARA TELEFONE — (XX) X XXXX-XXXX
+═══════════════════════════════════════════════════════════ */
+function mascararTel(input) {
+  let d = input.value.replace(/\D/g, '').slice(0, 11);
+  if (!d) { input.value = ''; return; }
+  if (d.length <= 2)  { input.value = '(' + d; return; }
+  if (d.length <= 6)  { input.value = '(' + d.slice(0,2) + ') ' + d.slice(2); return; }
+  if (d.length <= 10) { input.value = '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6); return; }
+  input.value = '(' + d.slice(0,2) + ') ' + d.slice(2,3) + ' ' + d.slice(3,7) + '-' + d.slice(7);
+}
+
+function telFormatado(tel) {
+  const d = (tel || '').replace(/\D/g, '').slice(0, 11);
+  if (!d) return '';
+  if (d.length <= 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+  return '(' + d.slice(0,2) + ') ' + d.slice(2,3) + ' ' + d.slice(3,7) + '-' + d.slice(7);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXCLUIR LOJA
+═══════════════════════════════════════════════════════════ */
+async function confirmarExclusaoLoja(id) {
+  const todas = await getAll('lojas');
+  const loja = todas.find(l => l.id === id);
+  if (!loja) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="dialog-sheet">
+      <div class="dialog-title">Excluir Loja?</div>
+      <div class="dialog-sub">
+        Isso excluirá <b>${esc(loja.nome)}</b> com todos os clientes e fiados.<br>Esta ação não pode ser desfeita.
+      </div>
+      <div class="dialog-btns">
+        <button class="btn-cancel" onclick="this.closest('.overlay').remove()">Cancelar</button>
+        <button class="btn-confirm" style="background:var(--red)" id="btn-del-loja-confirm">Excluir</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.querySelector('#btn-del-loja-confirm').onclick = async () => {
+    const clientes = await getAll('clientes', 'lojaId', IDBKeyRange.only(id));
+    for (const c of clientes) {
+      const fiados = await getAll('fiados', 'clienteId', IDBKeyRange.only(c.id));
+      for (const f of fiados) await del('fiados', f.id);
+      await del('clientes', c.id);
+    }
+    await del('lojas', id);
+    overlay.remove();
+    toast('Loja removida.', 'sucesso');
+    const lojas = await getAll('lojas');
+    if (!lojas.length) irPara('boasvindas');
+    else { await renderDashboard(); irPara('dashboard'); }
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL — NOVA LOJA
+═══════════════════════════════════════════════════════════ */
+function abrirModalNovaLoja() {
+  _abrirModalLoja(null);
+}
+
+async function abrirModalEditarLoja(id) {
+  const todas = await getAll('lojas');
+  const loja = todas.find(l => l.id === id);
+  if (!loja) return;
+  _abrirModalLoja(loja);
+}
+
+function _abrirModalLoja(loja) {
+  const editando = !!loja;
+  const modais = document.getElementById('modais');
+  modais.innerHTML = `
+    <div class="modal-overlay" id="overlay-loja">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-titulo">${editando ? '🏪 Editar Loja' : '🏪 Nova Loja'}</div>
+          <button class="btn-fechar" onclick="fecharModal()">✕</button>
+        </div>
+        <input type="hidden" id="inp-loja-id" value="${editando ? loja.id : ''}">
+        <div class="form-group">
+          <label class="form-label">Nome da loja *</label>
+          <input type="text" class="form-input" id="inp-loja-nome" value="${editando ? esc(loja.nome) : ''}" placeholder="Ex: Mercado da Maria" autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Referência / bairro</label>
+          <input type="text" class="form-input" id="inp-loja-ref" value="${editando ? esc(loja.referencia || '') : ''}" placeholder="Ex: Ao lado do posto">
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+          <button class="btn-confirm" onclick="salvarLoja()">${editando ? 'Salvar' : 'Cadastrar'}</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('overlay-loja').onclick = e => { if (e.target.id === 'overlay-loja') fecharModal(); };
+}
+
+async function salvarLoja() {
+  const nome  = document.getElementById('inp-loja-nome')?.value.trim();
+  const idStr = document.getElementById('inp-loja-id')?.value;
+  if (!nome) { toast('Informe o nome da loja.', 'aviso'); return; }
+  const obj = { nome, referencia: document.getElementById('inp-loja-ref')?.value.trim() || '' };
+  if (idStr) obj.id = Number(idStr);
+  const eraPrimeira = (await getAll('lojas')).length === 0 && !idStr;
+  await put('lojas', obj);
+  fecharModal();
+  toast(idStr ? '✅ Loja atualizada!' : '🎉 Loja cadastrada!', 'sucesso');
+  await renderLojas('');
+  if (eraPrimeira) {
+    await renderDashboard();
+    irPara('dashboard');
+  } else {
+    irPara('lojas');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL — NOVO CLIENTE
+═══════════════════════════════════════════════════════════ */
+async function abrirModalNovoCliente(id = null) {
+  if (!estado.loja) return;
+  let cli = { nome: '', telefone: '' };
+  if (id) {
+    const todos = await getAll('clientes');
+    cli = todos.find(c => c.id === id) || cli;
+  }
+  const modais = document.getElementById('modais');
+  modais.innerHTML = `
+    <div class="modal-overlay" id="overlay-cli">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <div class="modal-titulo">${id ? '👩 Editar Cliente' : '👩 Nova Cliente'}</div>
+          <button class="btn-fechar" onclick="fecharModal()">✕</button>
+        </div>
+        <input type="hidden" id="inp-cli-id" value="${id || ''}">
+        <div class="form-group">
+          <label class="form-label">Nome *</label>
+          <input type="text" class="form-input" id="inp-cli-nome" value="${esc(cli.nome)}" placeholder="Nome da vendedora" autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">WhatsApp</label>
+          <input type="tel" class="form-input" id="inp-cli-tel" value="${esc(telFormatado(cli.telefone))}" placeholder="(11) 9 8765-4321" oninput="mascararTel(this)" inputmode="numeric">
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+          <button class="btn-confirm" onclick="salvarCliente()">${id ? 'Salvar' : 'Cadastrar'}</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('overlay-cli').onclick = e => { if (e.target.id === 'overlay-cli') fecharModal(); };
+}
+
+async function salvarCliente() {
+  const nome = document.getElementById('inp-cli-nome')?.value.trim();
+  const idStr = document.getElementById('inp-cli-id')?.value;
+  if (!nome) { toast('Informe o nome.', 'aviso'); return; }
+  
+  const obj = {
+    lojaId:    estado.loja.id,
+    lojaNome:  estado.loja.nome,
+    nome,
+    telefone: document.getElementById('inp-cli-tel')?.value.trim() || '',
+  };
+  if (idStr) obj.id = Number(idStr);
+
+  await put('clientes', obj);
+  fecharModal();
+  toast(idStr ? 'Cliente atualizada!' : 'Cliente cadastrada!', 'sucesso');
+  await renderClientes('');
+}
+
+async function confirmarExclusaoCliente(id) {
+  const todos = await getAll('clientes');
+  const cli = todos.find(c => c.id === id);
+  if (!cli) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="dialog-sheet">
+      <div class="dialog-title">Excluir Cliente?</div>
+      <div class="dialog-sub">
+        Isso excluirá <b>${esc(cli.nome)}</b> e todos os fiados dela.<br>Esta ação não pode ser desfeita.
+      </div>
+      <div class="dialog-btns">
+        <button class="btn-cancel" onclick="this.closest('.overlay').remove()">Cancelar</button>
+        <button class="btn-confirm" style="background:var(--red)" id="btn-del-cli-confirm">Excluir</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#btn-del-cli-confirm').onclick = async () => {
+    const fiados = await getAll('fiados', 'clienteId', IDBKeyRange.only(id));
+    for (const f of fiados) await del('fiados', f.id);
+    await del('clientes', id);
+    overlay.remove();
+    toast('Cliente removida.', 'sucesso');
+    await renderClientes('');
+  };
+}
+
+function fecharModal() {
+  document.getElementById('modais').innerHTML = '';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOTÃO VOLTAR DO ANDROID
+═══════════════════════════════════════════════════════════ */
+const ORDEM_VOLTAR = { lancar: 'clientes', clientes: 'lojas', lojas: 'dashboard', dashboard: null, resumo: null, calc: null, config: null };
+
+window.addEventListener('popstate', () => {
+  const ant = ORDEM_VOLTAR[estado.telaAtual];
+  if (ant) {
+    history.pushState({}, '', '#');
+    irPara(ant);
+  }
+  // Se null, o browser sai normalmente (comportamento esperado)
+});
+
+/* ═══════════════════════════════════════════════════════════
+   CALCULADORA MAQUININHA
+═══════════════════════════════════════════════════════════ */
+const TAXAS_OBJ = carregarTaxas();
+let TAXAS = TAXAS_OBJ;
+
+function calcRepasse(val, taxa) {
+  return val / (1 - taxa / 100);
+}
+
+function calcFmt(v) {
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function calcMascara(input) {
+  let digits = input.value.replace(/\D/g, '');
+  if (!digits) { input.value = ''; return; }
+  const num = parseInt(digits, 10) / 100;
+  input.value = 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function calcAtualizar(input) {
+  calcMascara(input);
+  const clean = input.value.replace(/[^\d,]/g, '').replace(',', '.');
+  const base = parseFloat(clean) || 0;
+  document.getElementById('calc-debito').textContent  = base > 0 ? calcFmt(calcRepasse(base, TAXAS.debito))         : 'R$ 0,00';
+  document.getElementById('calc-credito').textContent = base > 0 ? calcFmt(calcRepasse(base, TAXAS.credito_avista)) : 'R$ 0,00';
+}
+
+function calcLimpar() {
+  const inp = document.getElementById('calc-input');
+  if (inp) inp.value = '';
+  document.getElementById('calc-debito').textContent  = 'R$ 0,00';
+  document.getElementById('calc-credito').textContent = 'R$ 0,00';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SISTEMA DE BACKUP TRANSPARENTE
+═══════════════════════════════════════════════════════════ */
+async function backupSilencioso() {
+  try {
+    const dados = {
+      lojas: await getAll('lojas'),
+      clientes: await getAll('clientes'),
+      fiados: await getAll('fiados'),
+      ts: Date.now()
+    };
+    // Espelhamento preventivo contra corrupção do IndexedDB
+    localStorage.setItem('caderno_reserva', JSON.stringify(dados));
+  } catch(e) {}
+}
+
+async function exportarBackup() {
+  const dados = {
+    lojas: await getAll('lojas'),
+    clientes: await getAll('clientes'),
+    fiados: await getAll('fiados'),
+    exportadoEm: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  // Nome versionado com Data e Hora para não sobrescrever o anterior no celular
+  const agora = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.href = url;
+  a.download = `backup-caderno-${agora}.json`;
+  a.click();
+  toast('Backup gerado na sua pasta Downloads');
+}
+
+function importarBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const dados = JSON.parse(e.target.result);
+      if (!confirm("Isso substituirá seus dados atuais pelos deste arquivo. Continuar?")) return;
+      
+      // Limpeza segura antes da restauração
+      for (const s of ['lojas', 'clientes', 'fiados']) {
+        const itens = await getAll(s);
+        for (const i of itens) await new Promise(r => {
+          const req = tx(s, 'readwrite').delete(i.id);
+          req.onsuccess = r;
+        });
+      }
+
+      // Importação recriando os registros
+      if (dados.lojas) for (const l of dados.lojas) { delete l.id; await put('lojas', l); }
+      if (dados.clientes) for (const c of dados.clientes) { delete c.id; await put('clientes', c); }
+      if (dados.fiados) for (const f of dados.fiados) { delete f.id; await put('fiados', f); }
+
+      toast('Restauração concluída!');
+      setTimeout(() => location.reload(), 1000);
+    } catch (err) {
+      toast('Arquivo inválido', 'erro');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════════ */
+async function renderDashboard() {
+  // Saudação + data
+  const agora = new Date();
+  const hora  = agora.getHours();
+  const saudacao = hora < 12 ? 'Bom dia! ☀️' : hora < 18 ? 'Boa tarde! 🌤️' : 'Boa noite! 🌙';
+  const dataBR = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const elHello = document.getElementById('dash-hello');
+  const elDate  = document.getElementById('dash-date-line');
+  if (elHello) elHello.textContent = saudacao;
+  if (elDate)  elDate.textContent  = dataBR;
+
+  // Dados
+  const hj      = hoje();
+  const lojas   = await getAll('lojas');
+  const clientes= await getAll('clientes');
+  const fiados  = await getAll('fiados');
+  const abertos = fiados.filter(f => f.saldo > 0.01);
+
+  const totalAberto  = abertos.reduce((s,f) => s + f.saldo, 0);
+  const totalVencido = abertos
+    .filter(f => f.dataVenc && f.dataVenc < hj)
+    .reduce((s,f) => s + f.saldo, 0);
+
+  const setEl = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  setEl('dash-kpi-total',    'R$ ' + fmt(totalAberto));
+  setEl('dash-kpi-venc',     'R$ ' + fmt(totalVencido));
+  setEl('dash-kpi-lojas',    lojas.length);
+  setEl('dash-kpi-clientes', clientes.length);
+
+  // Próximos vencimentos (ordenados, só os que vencem nos próximos 15 dias ou já vencidos)
+  const lista = document.getElementById('dash-venc-list');
+  if (!lista) return;
+
+  if (!abertos.length) {
+    lista.innerHTML = `<div class="empty"><div class="empty-ico">🎉</div><p>Nenhum fiado em aberto!</p></div>`;
+    return;
+  }
+
+  // Agrupa por cliente e soma saldos, pega o vencimento mais próximo
+  const porCli = new Map();
+  abertos.forEach(f => {
+    if (!porCli.has(f.clienteId)) {
+      porCli.set(f.clienteId, { nome: f.clienteNome, loja: f.lojaNome, saldo: 0, minVenc: f.dataVenc });
+    }
+    const c = porCli.get(f.clienteId);
+    c.saldo += f.saldo;
+    if (f.dataVenc && (!c.minVenc || f.dataVenc < c.minVenc)) c.minVenc = f.dataVenc;
+  });
+
+  const items = [...porCli.values()]
+    .sort((a,b) => (a.minVenc||'9999') < (b.minVenc||'9999') ? -1 : 1)
+    .slice(0, 8);
+
+  lista.innerHTML = items.map(c => {
+    const atrasado = c.minVenc && c.minVenc < hj;
+    return `<div class="dash-venc-item ${atrasado ? 'urgente' : ''}">
+      <div class="dash-venc-dot">${atrasado ? '⚠️' : '📅'}</div>
+      <div class="dash-venc-info">
+        <div class="dash-venc-nome">${esc(c.nome)}</div>
+        <div class="dash-venc-meta">${esc(c.loja)} · vence ${fmtBR(c.minVenc)}</div>
+      </div>
+      <div class="dash-venc-valor">R$ ${fmt(c.saldo)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCORDION DE CONFIGURAÇÕES
+═══════════════════════════════════════════════════════════ */
+function toggleAcc(id) {
+  const sec = document.getElementById(id);
+  if (!sec) return;
+  const aberto = sec.classList.contains('aberto');
+  // Fecha todos
+  document.querySelectorAll('.config-section.aberto').forEach(s => s.classList.remove('aberto'));
+  // Abre o clicado se estava fechado
+  if (!aberto) sec.classList.add('aberto');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONFIGURAÇÕES
+═══════════════════════════════════════════════════════════ */
+function abrirConfig() {
+  irPara('config');
+  // Preenche campos de taxas
+  const taxas = carregarTaxas();
+  const inpDeb  = document.getElementById('conf-taxa-deb');
+  const inpCred = document.getElementById('conf-taxa-cred');
+  if (inpDeb)  inpDeb.value  = taxas.debito;
+  if (inpCred) inpCred.value = taxas.credito_avista;
+  // Preenche lista de produtos
+  renderProdutosConfig();
+}
+
+function renderProdutosConfig() {
+  const prod = carregarProdutos();
+  const lista = document.getElementById('config-produtos-lista');
+  if (!lista) return;
+  lista.innerHTML = prod.map((p, i) => `
+    <div class="prod-edit-row">
+      <div class="prod-edit-emoji">${p.emoji}</div>
+      <div class="prod-edit-fields">
+        <input type="text" class="prod-edit-nome" id="pe-nome-${i}" value="${esc(p.nome)}" placeholder="Nome do produto">
+        <div class="prod-edit-preco-wrap">
+          <span class="prod-edit-preco-label">R$</span>
+          <input type="number" class="prod-edit-preco" id="pe-preco-${i}" value="${p.preco}" min="0" step="0.5" inputmode="decimal">
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function salvarProdutosConfig() {
+  const prod = carregarProdutos();
+  let ok = true;
+  prod.forEach((p, i) => {
+    const nome  = document.getElementById(`pe-nome-${i}`)?.value.trim();
+    const preco = parseFloat(document.getElementById(`pe-preco-${i}`)?.value);
+    if (!nome || isNaN(preco) || preco < 0) { ok = false; return; }
+    p.nome  = nome;
+    p.preco = preco;
+  });
+  if (!ok) { toast('Verifique os valores dos produtos.', 'aviso'); return; }
+  salvarProdutosStorage(prod);
+  PRODUTOS = prod;
+  toast('✅ Produtos salvos!', 'sucesso');
+}
+
+function salvarTaxasConfig() {
+  const deb  = parseFloat(document.getElementById('conf-taxa-deb')?.value);
+  const cred = parseFloat(document.getElementById('conf-taxa-cred')?.value);
+  if (isNaN(deb) || isNaN(cred) || deb < 0 || cred < 0) { toast('Taxas inválidas.', 'aviso'); return; }
+  const novas = { debito: deb, credito_avista: cred };
+  salvarTaxasStorage(novas);
+  TAXAS = novas;
+  // Atualiza exibição da calculadora se estiver visível
+  const inp = document.getElementById('calc-input');
+  if (inp && inp.value) calcAtualizar(inp);
+  // Atualiza labels de taxa
+  const elDeb  = document.querySelector('.calc-result-card.debito  .calc-result-taxa');
+  const elCred = document.querySelector('.calc-result-card.credito .calc-result-taxa');
+  if (elDeb)  elDeb.textContent  = `Taxa repassada: ${novas.debito}%`;
+  if (elCred) elCred.textContent = `Taxa repassada: ${novas.credito_avista}%`;
+  const elLDeb  = document.getElementById('lbl-taxa-deb');
+  const elLCred = document.getElementById('lbl-taxa-cred');
+  if (elLDeb)  elLDeb.textContent  = `Taxa repassada: ${String(novas.debito).replace('.',',')}%`;
+  if (elLCred) elLCred.textContent = `Taxa repassada: ${String(novas.credito_avista).replace('.',',')}%`;
+  toast('✅ Taxas salvas!', 'sucesso');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPARTILHAR BACKUP (Web Share API → Google Drive, etc.)
+═══════════════════════════════════════════════════════════ */
+async function compartilharBackup() {
+  try {
+    const dados = {
+      lojas:       await getAll('lojas'),
+      clientes:    await getAll('clientes'),
+      fiados:      await getAll('fiados'),
+      exportadoEm: new Date().toISOString()
+    };
+    const agora = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const nomeArq = `backup-caderno-${agora}.json`;
+    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+    const file = new File([blob], nomeArq, { type: 'application/json' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: 'Backup Caderno da Vendedora',
+        text:  `Backup gerado em ${new Date().toLocaleDateString('pt-BR')}`,
+        files: [file]
+      });
+      toast('Backup compartilhado!', 'sucesso');
+    } else if (navigator.share) {
+      // Fallback sem arquivos (compartilha só o texto descritivo)
+      await navigator.share({ title: 'Caderno da Vendedora', text: 'Backup disponível para download.' });
+    } else {
+      // Sem suporte: faz download normal
+      exportarBackup();
+      toast('Baixando backup...', 'sucesso');
+    }
+  } catch(err) {
+    if (err.name !== 'AbortError') {
+      exportarBackup();
+    }
+  }
+}
+
+
+async function init() {
+  await abrirDB();
+
+  // Tenta garantir que o navegador não apague os dados por falta de espaço
+  if (navigator.storage && navigator.storage.persist) {
+    await navigator.storage.persist();
+  }
+
+  // Empurra uma entrada no histórico para o Back funcionar
+  history.pushState({}, '', '#');
+
+  // Atualiza labels dinâmicos de taxa na calculadora
+  const taxasInicio = carregarTaxas();
+  TAXAS = taxasInicio;
+  const lDeb  = document.getElementById('lbl-taxa-deb');
+  const lCred = document.getElementById('lbl-taxa-cred');
+  if (lDeb)  lDeb.textContent  = `Taxa repassada: ${String(taxasInicio.debito).replace('.',',')}%`;
+  if (lCred) lCred.textContent = `Taxa repassada: ${String(taxasInicio.credito_avista).replace('.',',')}%`;
+
+  // Atualiza produtos
+  PRODUTOS = carregarProdutos();
+
+  const lojas = await getAll('lojas');
+  if (lojas.length === 0) {
+    irPara('boasvindas');
+  } else {
+    await renderDashboard();
+    irPara('dashboard');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('ativo'));
+    document.getElementById('nav-inicio')?.classList.add('ativo');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
